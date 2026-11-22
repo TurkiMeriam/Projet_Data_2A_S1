@@ -218,3 +218,38 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Données : jamais dans Git (DVF = centaines de Mo). Se régénèrent via le pipeline.
+data/raw/*
+data/processed/*
+data/interim/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+*.parquet
+*.duckdb
+*.csv
+*.csv.gz
+*.gz
+*.zip
+*.gpkg
+*.shp
+
+# Rendus lourds (les figures finales peuvent être ajoutées avec git add -f)
+outputs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Divers
+.DS_Store
+.env
+.vscode/
+.idea/
