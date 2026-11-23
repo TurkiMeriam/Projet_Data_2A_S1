@@ -36,6 +36,18 @@ Sorties (hors Git) :
 - `data/processed/dvf_appartements.parquet` : une ligne par vente d'appartement
 - `data/processed/dvf_appartements_rapport.csv` : nombre de mutations restantes à chaque étape de nettoyage (utile pour la section « limites » du rapport)
 
+# Ajoute la station de métro/RER la plus proche (à lancer après le DVF)
+python -m vrai_prix.stations
+python -m vrai_prix.stations --skip-download --modes METRO RER TRAMWAY
+```
+
+Sortie : `data/processed/dvf_stations.parquet` = DVF nettoyé + `id_station, nom_station, lignes_station, modes_station, nb_lignes_station, date_ouverture_station, dist_station_m, classe_dist, nb_stations_voisinage`. Une station n'est prise en compte qu'à partir de sa date de mise en service (ex. ligne 14 sud, juin 2024).
+
+```python
+from vrai_prix.stations import load_dvf_stations
+df = load_dvf_stations()
+```
+
 Dans un notebook :
 
 ```python
