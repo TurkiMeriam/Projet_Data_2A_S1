@@ -7,7 +7,6 @@ Usage en ligne de commande (depuis la racine du dépôt) :
     python -m vrai_prix.dvf                       # tout le périmètre du projet
     python -m vrai_prix.dvf --years 2024 2025 --deps 75
     python -m vrai_prix.dvf --skip-download       # réutilise data/raw/
-
 Choix de nettoyage (une ligne = une vente d'un appartement) :
   1. suppression des lignes strictement dupliquées (le DVF répète une ligne
      par nature de culture ; les numéros de lot évitent de fusionner deux
