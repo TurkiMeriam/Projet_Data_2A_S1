@@ -35,3 +35,22 @@ LON_BOUNDS = (1.4, 3.6)
 
 # Fichier de sortie du pipeline DVF
 DVF_CLEAN_PARQUET = DATA_PROCESSED / "dvf_appartements.parquet"
+
+# --- Stations (IDFM, « Emplacement des gares d'Île-de-France ») -----------
+# Une ligne par couple gare x ligne, avec la date de mise en service
+# (champ date_mise) : permet de ne compter une station qu'une fois ouverte.
+STATIONS_URL = (
+    "https://data.iledefrance-mobilites.fr/api/explore/v2.1/catalog/"
+    "datasets/emplacement-des-gares-idf/exports/geojson"
+)
+STATIONS_RAW = DATA_RAW / "stations" / "emplacement_gares_idf.geojson"
+# Modes présents : METRO, RER, TRAIN, TRAMWAY, VAL, CABLE
+MODES_RETENUS = ("METRO", "RER")
+
+# Projection métrique (Lambert 93) pour calculer des distances en mètres
+CRS_METRIQUE = 2154
+# Bornes des classes de distance à la station la plus proche (mètres)
+CLASSES_DIST = [0, 200, 400, 600, 800, 1000, float("inf")]
+RAYON_VOISINAGE = 500  # m : rayon pour compter les stations "à pied"
+
+DVF_STATIONS_PARQUET = DATA_PROCESSED / "dvf_stations.parquet"
