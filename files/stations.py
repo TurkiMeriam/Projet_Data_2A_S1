@@ -1,10 +1,4 @@
 """Stations de métro / RER / tramway (IDFM) et distance de chaque vente DVF.
-
-Fichier unique et autonome : se lance directement via le bouton « Run » de VS Code
-ou en ligne de commande :
-    python stations.py
-    python stations.py --skip-download
-    python stations.py --modes METRO RER TRAMWAY
 """
 from __future__ import annotations
 
