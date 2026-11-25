@@ -1,0 +1,34 @@
+PROJET ENSAE - LE VRAI PRIX DE LA VILLE
+ANALYSE DESCRIPTIVE INTRA-COMMUNALE
+============================================================
+
+Nombre de transactions analysées : 319947
+Nombre de communes retenues : 115
+
+Tranche de référence : 200-300 m
+Minimum de transactions par tranche : 30
+Minimum de tranches par commune : 3
+
+SYNTHESE DES ECARTS INTRA-COMMUNAUX
+------------------------------------------------------------
+           zone tranche_distance  nombre_communes  ecart_median_pourcentage  ecart_moyen_pourcentage  ecart_median_euros  part_communes_positives
+          Paris          0-100 m               20                 -0.714493                -0.992153          -82.457211                40.000000
+          Paris        100-200 m               20                 -0.522422                -1.074685          -58.166216                30.000000
+          Paris        200-300 m               20                  0.000000                 0.000000            0.000000                 0.000000
+          Paris        300-400 m               19                  0.219264                 0.876659           23.833051                63.157895
+          Paris        400-600 m               15                 -1.577120                -0.140256         -170.995671                33.333333
+          Paris        600-800 m                6                 -7.645951                -7.994417         -771.834936                16.666667
+Petite couronne          0-100 m               24                  0.349858                 1.155415           29.705460                54.166667
+Petite couronne        100-200 m               51                  0.567108                 0.421364           25.000000                52.941176
+Petite couronne      1000-1500 m               45                 -7.012776                -4.383904         -298.245614                35.555556
+Petite couronne      1500 m et +               17                -14.000000                -9.545506         -569.830807                35.294118
+Petite couronne        200-300 m               65                  0.000000                 0.000000            0.000000                 0.000000
+Petite couronne        300-400 m               62                  0.350728                 1.367505           21.724719                56.451613
+Petite couronne        400-600 m               64                 -1.120463                 1.034361          -85.490861                46.875000
+Petite couronne        600-800 m               63                 -2.943809                -2.032063         -183.209647                33.333333
+Petite couronne       800-1000 m               57                 -5.286291                -4.382989         -269.933712                29.824561
+
+INTERPRETATION METHODOLOGIQUE
+Cette analyse compare les prix médians des appartements selon leur distance à une station, au sein d'une même commune.
+Les écarts sont ensuite agrégés entre communes avec un poids égal pour chaque commune dans la médiane.
+Il s'agit d'une analyse descriptive et non causale. La commune ne contrôle pas toutes les différences de quartier, de rue, de qualité du logement ou d'environnement.
