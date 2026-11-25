@@ -127,7 +127,7 @@ def charger_dvf_nettoye(dossier_processed: Path = DATA_PROCESSED) -> pd.DataFram
         if not dossier.exists():
             continue
 
-        parquet = dossier / "dvf_appartements_clean.parquet"
+        parquet = dossier / "dvf_appartements.parquet"
         if parquet.exists():
             df = pd.read_parquet(parquet)
             log.info("DVF chargé depuis %s : %d lignes", parquet, len(df))
