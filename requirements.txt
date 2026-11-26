@@ -16,5 +16,3 @@ jupyter
 ipykernel
 nbformat
 pytest>=8
-
-# folium, plotly, seaborn : à ajouter ici seulement s'ils sont utilisés (cartes interactives)
