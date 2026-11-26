@@ -1,0 +1,23 @@
+PROJET ENSAE - LE VRAI PRIX DE LA VILLE
+RECHERCHE DE LA DISTANCE LA PLUS VALORISEE
+=================================================================
+
+Transactions analysées : 319947
+Seuil global : 200
+Seuil par commune : 30
+
+MEILLEURES TRANCHES DE 100 METRES
+-----------------------------------------------------------------
+Paris : 100-200 m - 10434.78 €/m² (43964 ventes)
+Petite couronne : 0-100 m - 6666.67 €/m² (2287 ventes)
+
+MEILLEURES TRANCHES EN ANALYSE INTRA-COMMUNALE
+-----------------------------------------------------------------
+Paris : 0-50 m - 1.53% (18 communes)
+Petite couronne : 300-350 m - 1.63% (55 communes)
+
+LIMITES METHODOLOGIQUES
+-----------------------------------------------------------------
+Le prix médian le plus élevé identifie une tranche de distance la plus valorisée dans les transactions observées. Il ne démontre pas l'existence d'une distance optimale causale.
+Les effectifs doivent être examinés pour chaque intervalle. Les communes contributrices peuvent varier selon les distances.
+La comparaison intra-communale réduit les différences entre communes, mais ne neutralise pas les différences de quartier ou les caractéristiques des logements.
