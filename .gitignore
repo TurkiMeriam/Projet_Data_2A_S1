@@ -234,7 +234,14 @@ data/interim/*
 *.shp
 
 # Rendus lourds (les figures finales peuvent être ajoutées avec git add -f)
-outputs/
+# On versionne donc les figures et les petits tableaux, pas le reste
+outputs/*
+!outputs/figures/
+!outputs/tables/
+!outputs/tables/*.csv
+!outputs/figures/.gitkeep
+!outputs/tables/.gitkeep
+
 
 # Python
 __pycache__/

@@ -1,18 +1,20 @@
+# Données et calcul
 pandas>=2.1
 numpy>=1.26
-pyarrow>=14
-requests>=2.31
+pyarrow>=14          # lecture et écriture du format Parquet
+requests>=2.31       # téléchargements (DVF, stations IDFM)
 
-# Étapes suivantes du projet (jointures spatiales, modèle, cartes)
-geopandas>=0.14
+# Géographie
+geopandas>=1.0       # jointures spatiales, distances en mètres
 shapely>=2.0
-statsmodels>=0.14
-folium>=0.15
-plotly>=5.18
-seaborn>=0.13
+
+# Graphiques
 matplotlib>=3.8
 
-# Dev
-pytest>=8
+# Notebooks et tests
 jupyter
+ipykernel
 nbformat
+pytest>=8
+
+# folium, plotly, seaborn : à ajouter ici seulement s'ils sont utilisés (cartes interactives)
