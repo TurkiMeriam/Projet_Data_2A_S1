@@ -190,3 +190,25 @@ def prime_stratifiee_annee(res: pd.DataFrame):
     ax.legend(frameon=False)
     _sauver(fig, "prime_stratifiee_annee.png")
     return fig
+
+
+def evolution_prolongements(prol: pd.DataFrame):
+    """Indice du prix médian (base 100 la première année) : quartiers desservis en 2024 contre témoins."""
+    from .analysis import DESSERVI, TEMOIN
+
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    annees = prol.index.to_numpy()
+    for grp, couleur in [(DESSERVI, "#e67e22"), (TEMOIN, "#7f8c8d")]:
+        y = prol[f"indice {grp}"]
+        ax.plot(annees, y, marker="o", ms=6, lw=2, color=couleur, label=grp)
+        ax.annotate(f"{y.iloc[-1]:.1f}", (annees[-1], y.iloc[-1]), xytext=(8, 0),
+                    textcoords="offset points", va="center", fontsize=9)
+    ax.axhline(100, color="black", lw=0.8)
+    ax.axvline(2024.45, color="grey", ls="--", lw=1)  # juin 2024
+    ax.text(2024.5, ax.get_ylim()[1], "ouverture\n(juin 2024)", va="top", fontsize=8, color="grey")
+    ax.set_xticks(annees)
+    ax.set(xlabel="Année", ylabel=f"Prix médian au m² (base 100 en {annees[0]})",
+           title="Prolongements des lignes 11 et 14 : quartiers desservis contre témoins")
+    ax.legend(frameon=False, loc="lower left")
+    _sauver(fig, "prolongements_l11_l14.png")
+    return fig
