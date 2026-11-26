@@ -396,3 +396,78 @@ def robustesse_prime(d_brut: pd.DataFrame) -> pd.DataFrame:
         r.insert(0, "specification", nom)
         blocs.append(r)
     return pd.concat(blocs, ignore_index=True)
+
+
+# --------------------------------------------------------------------------- prolongements des lignes 11 et 14
+
+LIGNES_PROLONGEES = ["METRO 11", "METRO 14"]
+OUVERTURE_DEBUT, OUVERTURE_FIN = pd.Timestamp("2024-06-01"), pd.Timestamp("2024-06-30")
+DESSERVI, TEMOIN = "Desservi en 2024", "Témoin"
+
+
+def distances_prolongements(df: pd.DataFrame) -> pd.DataFrame:
+    """Pour chaque vente : distance à la plus proche des stations ouvertes en juin 2024 sur les lignes 11 et 14
+    (`dist_nouvelle_m`, `nouvelle_station`) et distance à la plus proche station du réseau d'avant
+    l'ouverture (`dist_avant_m`), quelle que soit la date de la vente.
+
+    Ces distances décrivent la position du logement, pas l'état du réseau à la date de vente : elles
+    servent à suivre les mêmes quartiers avant et après l'ouverture.
+    """
+    import geopandas as gpd
+
+    from . import stations as S
+
+    lignes = S.read_stations_lignes()
+    est_nouvelle = (lignes["ligne"].isin(LIGNES_PROLONGEES)
+                    & lignes["date_mise"].between(OUVERTURE_DEBUT, OUVERTURE_FIN))
+    nouvelles = lignes.loc[est_nouvelle, ["nom_station", "ligne", "geometry"]].rename(
+        columns={"nom_station": "nouvelle_station", "ligne": "ligne_nouvelle"})
+    if nouvelles.empty:
+        raise ValueError("Aucune station des lignes 11 ou 14 ouverte en juin 2024 dans le fichier IDFM.")
+    avant = S.stations_ouvertes(lignes, OUVERTURE_DEBUT - pd.Timedelta(days=1))[["geometry"]]
+
+    d = df.dropna(subset=["longitude", "latitude", "prix_m2"]).reset_index(drop=True)
+    ventes = S.dvf_to_gdf(d)[["geometry"]]
+    proche = gpd.sjoin_nearest(ventes, nouvelles, how="left", distance_col="dist_nouvelle_m")
+    proche = proche[~proche.index.duplicated(keep="first")]
+    ancien = gpd.sjoin_nearest(ventes, avant, how="left", distance_col="dist_avant_m")
+    ancien = ancien[~ancien.index.duplicated(keep="first")]
+
+    d["nouvelle_station"] = proche["nouvelle_station"]
+    d["ligne_nouvelle"] = proche["ligne_nouvelle"]
+    d["dist_nouvelle_m"] = proche["dist_nouvelle_m"]
+    d["dist_avant_m"] = ancien["dist_avant_m"]
+    return d
+
+
+def groupes_prolongements(d_prol: pd.DataFrame, rayon: float = 600, sans_station_avant: float = 800,
+                          temoin_au_dela: float = 1200) -> pd.DataFrame:
+    """Ventes des groupes « desservi » et « témoin » (colonne `groupe`).
+
+    - desservi : à moins de `rayon` m d'une nouvelle station et à plus de `sans_station_avant` m
+      de toute station existant avant l'ouverture ;
+    - témoin : ventes des mêmes communes situées à plus de `temoin_au_dela` m de toute nouvelle station.
+    """
+    desservi = (d_prol["dist_nouvelle_m"] < rayon) & (d_prol["dist_avant_m"] > sans_station_avant)
+    communes = d_prol.loc[desservi, "commune_id"].unique()
+    temoin = d_prol["commune_id"].isin(communes) & (d_prol["dist_nouvelle_m"] > temoin_au_dela)
+    g = d_prol[desservi | temoin].copy()
+    g["groupe"] = np.where(desservi[desservi | temoin], DESSERVI, TEMOIN)
+    return g
+
+
+def evolution_prolongements(g_prol: pd.DataFrame) -> pd.DataFrame:
+    """Par année et par groupe : nombre de ventes, prix médian au m² et indice (base 100 la première année).
+
+    `ecart_indices` = indice du groupe desservi - indice du groupe témoin (en points).
+    """
+    t = g_prol.pivot_table(index="annee", columns="groupe", values="prix_m2",
+                           aggfunc=["size", "median"]).sort_index()
+    out = pd.DataFrame(index=t.index)
+    for grp in (DESSERVI, TEMOIN):
+        out[f"n {grp}"] = t[("size", grp)].astype(int)
+        out[f"prix_median {grp}"] = t[("median", grp)].round(0)
+        out[f"indice {grp}"] = (100 * t[("median", grp)] / t[("median", grp)].iloc[0]).round(1)
+    out["ecart_indices"] = (out[f"indice {DESSERVI}"] - out[f"indice {TEMOIN}"]).round(1)
+    out.index.name = "annee"
+    return out

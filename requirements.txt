@@ -1,6 +1,7 @@
 # Données et calcul
 pandas>=2.1
 numpy>=1.26
+scipy>=1.11          # corrélation de Spearman (pandas .corr(method="spearman"))
 pyarrow>=14          # lecture et écriture du format Parquet
 requests>=2.31       # téléchargements (DVF, stations IDFM)
 
