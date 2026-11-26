@@ -14,3 +14,13 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+dependencies = [
+    "pandas>=2.1",
+    "numpy>=1.26",
+    "pyarrow>=14",
+    "requests>=2.31",
+    "geopandas>=1.0",
+    "shapely>=2.0",
+    "matplotlib>=3.8",
+]
