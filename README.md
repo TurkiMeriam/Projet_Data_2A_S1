@@ -117,11 +117,12 @@ Les seuils sont modifiables dans `src/vrai_prix/config.py`.
 
 ## Résultats
 
-<!-- À compléter après exécution des deux notebooks, avec les chiffres lus dans outputs/tables/. -->
 Les résultats détaillés sont dans les notebooks. Les tableaux et figures sont enregistrés dans `outputs/tables/` et `outputs/figures/`.
 
-- *Analyse descriptive (`01_exploration`) : à résumer en 2-3 lignes.*
-- *Effet de la distance (`02_analyse_finale`) : corrélations, prime de proximité, Paris contre petite couronne.*
+- **Corrélation trompeuse à grande échelle.** Prix et distance sont fortement corrélés sur l'ensemble (Spearman ≈ −0,56 à −0,60), mais surtout parce que Paris est à la fois plus cher et mieux desservi. Rapporté au prix médian de sa commune, la corrélation tombe presque à zéro (0 à −0,06).
+- **La distance la plus valorisée se situe entre 100 et 400 m.** À biens comparables, le prix est stable jusqu'à 400 m puis baisse, surtout au-delà de 600 m (environ −6,5 % à Paris et −3 % en petite couronne entre 600 et 1 000 m, par rapport à 200-400 m). En petite couronne, on observe aussi une légère décote à moins de 100 m (≈ −3,5 %), compatible avec des nuisances, mais fondée sur peu de ventes.
+- **Prime de proximité en petite couronne.** Les biens à moins de 300 m d'une station se vendent environ 5 à 8 % plus cher que ceux à plus de 600 m, à commune, année et surface comparables. Ce résultat est stable de 2021 à 2025 et robuste aux seuils. À Paris, le signe est le plus souvent positif, mais trop peu de ventes éloignées existent pour le chiffrer.
+- **Étude de cas : prolongements des lignes 11 et 14 (juin 2024).** Dans les quartiers qui ont gagné une station, le prix médian augmente d'environ 9 % entre 2021 et 2025, contre une baisse d'environ 7 % dans les quartiers témoins des mêmes communes : un écart de 12 à 16 points selon les seuils retenus. L'écart apparaît dès 2023, avant l'ouverture, ce qui suggère une anticipation par les acheteurs.
 
 ## Limites
 
@@ -129,7 +130,7 @@ Les résultats détaillés sont dans les notebooks. Les tableaux et figures sont
 - Les coordonnées sont celles du centre de la parcelle, pas de l'immeuble : la précision est limitée pour comparer 50 m et 100 m.
 - Le prix d'éventuelles dépendances vendues avec l'appartement est inclus dans le prix au m².
 - Les stations sont souvent implantées dans des zones déjà denses et recherchées : les coefficients sont des corrélations conditionnelles, pas des effets causaux.
-- Les parcs, axes routiers, fréquentation et équipements ne sont pas encore pris en compte.
+- Les parcs, axes routiers, fréquentation et équipements ne sont pas pris en compte.
 
 ## Tests
 
