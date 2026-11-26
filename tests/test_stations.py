@@ -217,7 +217,7 @@ def dossiers_vides(tmp_path, monkeypatch):
 def test_charger_dvf_from_parquet(dossiers_vides):
     dossiers_vides.mkdir()
     pd.DataFrame({"date_mutation": pd.to_datetime(["2023-01-01"])}).to_parquet(
-        dossiers_vides / "dvf_appartements_clean.parquet")
+        dossiers_vides / "dvf_appartements.parquet")
     assert len(stations.charger_dvf_nettoye(dossiers_vides)) == 1
 
 

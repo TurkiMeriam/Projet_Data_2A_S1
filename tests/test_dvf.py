@@ -66,7 +66,7 @@ def test_dependances_counted_and_pieces_zero_is_missing():
 def test_read_dvf_gz_roundtrip(tmp_path):
     raw = make_raw()
     p = tmp_path / "75.csv.gz"
-    with gzip.open(p, "wt") as f:
+    with gzip.open(p, "wt", encoding="utf-8") as f:
         raw.assign(colonne_inutile=1).to_csv(f, index=False)
     back = dvf.read_dvf(p)
     assert "colonne_inutile" not in back.columns
@@ -77,7 +77,7 @@ def test_read_dvf_gz_roundtrip(tmp_path):
 def test_build_dataset_skip_download(tmp_path):
     p = dvf.raw_path(2023, "75", tmp_path / "raw")
     p.parent.mkdir(parents=True)
-    with gzip.open(p, "wt") as f:
+    with gzip.open(p, "wt", encoding="utf-8") as f:
         make_raw().to_csv(f, index=False)
     out_path = tmp_path / "out" / "dvf.parquet"
     res = dvf.build_dataset([2023], ["75"], tmp_path / "raw", out_path, download=False)
