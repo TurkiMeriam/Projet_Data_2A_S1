@@ -180,3 +180,37 @@ for ax, zone in zip(axes, ["Paris", "Petite couronne"]):
 fig.suptitle("Prime de proximité : brute et à commune égale", x=0.01, ha="left")
 fig.tight_layout()
 fig.savefig(dossier / "03_prime_proximite.png", dpi=150)
+import numpy as np
+import pandas as pd
+
+# --- à adapter à vos noms de colonnes ---
+COL_COMMUNE, COL_ANNEE, COL_PRIX = "code_commune", "annee", "prix_m2"
+MIN_VENTES = 30   # ventes minimum par commune et par année
+
+d = df.copy()
+d[COL_COMMUNE] = d[COL_COMMUNE].astype(str)
+d["zone"] = np.where(d[COL_COMMUNE].str.startswith("75"), "Paris", "Petite couronne")
+
+# 1. Médiane par commune (arrondissement pour Paris) et par année
+med = (d.groupby([COL_COMMUNE, "zone", COL_ANNEE])[COL_PRIX]
+         .agg(mediane="median", n="size").reset_index())
+med = med[med["n"] >= MIN_VENTES]
+
+# 2. Prix relatif : on retire la tendance générale de chaque année
+med["rel"] = med["mediane"] / med.groupby(["zone", COL_ANNEE])["mediane"].transform("median")
+
+# 3. Niveau moyen par commune sur la période, puis groupes fixes (terciles par zone)
+niveau = med.groupby([COL_COMMUNE, "zone"])["rel"].mean().reset_index()
+niveau["groupe"] = niveau.groupby("zone")["rel"].transform(lambda s: pd.qcut(s, 3, labels=False))
+niveau["groupe"] = niveau["groupe"].map({0: "bas", 1: "moyen", 2: "haut"})
+
+print(niveau.groupby(["zone", "groupe"]).size())
+
+# 4. Vérification : les groupes seraient-ils stables si on les refaisait chaque année ?
+med["g_annuel"] = med.groupby(["zone", COL_ANNEE])["rel"].transform(lambda s: pd.qcut(s, 3, labels=False))
+med = med.merge(niveau[[COL_COMMUNE, "groupe"]], on=COL_COMMUNE)
+same = med["g_annuel"].map({0: "bas", 1: "moyen", 2: "haut"}) == med["groupe"]
+print(f"Commune-années dans le même groupe que le groupe fixe : {same.mean():.0%}")
+
+# On rattache le groupe à chaque vente
+d = d.merge(niveau[[COL_COMMUNE, "groupe"]], on=COL_COMMUNE, how="inner")
