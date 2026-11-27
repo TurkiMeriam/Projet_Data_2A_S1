@@ -19,7 +19,7 @@ L'analyse est descriptive : elle repose sur des statistiques simples (médianes,
 
 ### Gestion des fichiers de données
 
-Les données brutes sont trop volumineuses pour Git (plus de 100 Mo pour le DVF des quatre départements). Elles ne sont donc pas dans le dépôt : le code les télécharge depuis leur URL publique et les garde en cache dans `data/` (dossier ignoré par Git). Chaque étape ne refait son travail que si le fichier est absent, ce qui évite de retélécharger à chaque exécution.
+Les données brutes sont trop volumineuses pour Git (plus de 100 Mo pour le DVF des quatre départements). Elles ne sont donc pas dans le dépôt : le code les télécharge depuis leur URL publique et les garde en cache dans `data/` (Les données DVF (brutes et nettoyées) et les stations IDFM sont versionnées dans `data/` pour que les notebooks tournent sans téléchargement). Chaque étape ne refait son travail que si le fichier est absent, ce qui évite de retélécharger à chaque exécution.
 
 Les chemins sont définis une seule fois, dans `src/vrai_prix/config.py`. Voir `docs/sources.md` pour les sources, les dates de téléchargement et les licences.
 
@@ -33,8 +33,6 @@ source .venv/bin/activate        # Windows : .venv\Scripts\activate
 pip install -r requirements.txt
 pip install -e .                 # rend `import vrai_prix` disponible partout
 ```
-
-Le projet a été développé avec Python 3.13 (SSP Cloud et Windows).
 
 ## Exécution
 
@@ -141,7 +139,7 @@ python -m pytest
 
 ## Travail en équipe
 
-Une branche par tâche, intégration par Pull Request relue par un autre membre. Les données ne sont jamais versionnées (`.gitignore`) : chacun les régénère avec les commandes ci-dessus.
+Une branche par tâche, intégration par Pull Request relue par un autre membre. Les données DVF (brutes et nettoyées) et les stations IDFM sont versionnées dans `data/` pour que les notebooks tournent sans téléchargement (environ 100 Mo). Elles peuvent aussi être régénérées avec les commandes ci-dessous. Les chemins sont définis une seule fois, dans `src/vrai_prix/config.py` (`.gitignore`).
 
 ## Transparence sur l'usage d'un assistant
 
