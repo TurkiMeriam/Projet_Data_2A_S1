@@ -82,7 +82,6 @@ Les notebooks ne contiennent presque pas de code : les calculs sont dans `src/vr
 │   ├── 01_exploration.ipynb     # analyse descriptive
 │   └── 02_analyse_finale.ipynb  # effet de la distance, conclusions
 ├── outputs/
-│   ├── dvf-stations/        # données dvf/stations téléchargées et nettoyées 
 │   ├── figures/             # figures du rapport
 │   └── tables/              # tableaux de résultats
 ├── src/vrai_prix/
@@ -128,7 +127,7 @@ Les résultats détaillés sont dans les notebooks. Les tableaux et figures sont
 - Le DVF ne contient ni étage, ni balcon, ni année de construction, ni état du bien : les ventes comparées ont la même commune et la même taille, mais pas forcément le même quartier, étage ou état.
 - Les coordonnées sont celles du centre de la parcelle, pas de l'immeuble : la précision est limitée pour comparer 50 m et 100 m.
 - Le prix d'éventuelles dépendances vendues avec l'appartement est inclus dans le prix au m².
-- Les stations sont souvent implantées dans des zones déjà denses et recherchées : les coefficients sont des corrélations conditionnelles, pas des effets causaux.
+- Les stations sont souvent implantées dans des zones déjà denses et recherchées : les écarts mesurés sont des associations, pas des effets causaux
 - Les parcs, axes routiers, fréquentation et équipements ne sont pas pris en compte.
 
 ## Tests
