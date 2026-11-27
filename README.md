@@ -21,7 +21,7 @@ L'analyse est descriptive : elle repose sur des statistiques simples (médianes,
 
 Les données brutes sont trop volumineuses pour Git (plus de 100 Mo pour le DVF des quatre départements). Elles ne sont donc pas dans le dépôt : le code les télécharge depuis leur URL publique et les garde en cache dans `data/` (dossier ignoré par Git). Chaque étape ne refait son travail que si le fichier est absent, ce qui évite de retélécharger à chaque exécution.
 
-Les chemins sont définis une seule fois, dans `src/vrai_prix/config.py`. Voir `docs/sources.md` pour les dates de téléchargement et les licences.
+Les chemins sont définis une seule fois, dans `src/vrai_prix/config.py`. Voir `docs/sources.md` pour les sources, les dates de téléchargement et les licences.
 
 ## Installation
 
@@ -121,7 +121,7 @@ Les résultats détaillés sont dans les notebooks. Les tableaux et figures sont
 
 - **Corrélation trompeuse à grande échelle.** Prix et distance sont fortement corrélés sur l'ensemble (Spearman ≈ −0,56 à −0,60), mais surtout parce que Paris est à la fois plus cher et mieux desservi. Rapporté au prix médian de sa commune, la corrélation tombe presque à zéro (0 à −0,06).
 - **La distance la plus valorisée se situe entre 100 et 400 m.** À biens comparables, le prix est stable jusqu'à 400 m puis baisse, surtout au-delà de 600 m (environ −6,5 % à Paris et −3 % en petite couronne entre 600 et 1 000 m, par rapport à 200-400 m). En petite couronne, on observe aussi une légère décote à moins de 100 m (≈ −3,5 %), compatible avec des nuisances, mais fondée sur peu de ventes.
-- **Prime de proximité en petite couronne.** Les biens à moins de 300 m d'une station se vendent environ 5 à 8 % plus cher que ceux à plus de 600 m, à commune, année et surface comparables. Ce résultat est stable de 2021 à 2025 et robuste aux seuils. À Paris, le signe est le plus souvent positif, mais trop peu de ventes éloignées existent pour le chiffrer.
+- **Prime de proximité en petite couronne.** Les biens à moins de 300 m d'une station se vendent en moyenne 7 à 9 % plus cher que ceux à plus de 600 m (selon l'année), à commune et surface comparables ; 5 à 9 % selon la spécification testée. L'écart typique (médiane des cellules) est plutôt de l'ordre de 5 %, car quelques cellules à gros écarts tirent la moyenne vers le haut. Ce résultat est stable de 2021 à 2025 et robuste aux seuils. À Paris, le signe est le plus souvent positif, mais trop peu de ventes éloignées existent pour le chiffrer.
 - **Étude de cas : prolongements des lignes 11 et 14 (juin 2024).** Dans les quartiers qui ont gagné une station, le prix médian augmente d'environ 9 % entre 2021 et 2025, contre une baisse d'environ 7 % dans les quartiers témoins des mêmes communes : un écart de 12 à 16 points selon les seuils retenus. L'écart apparaît dès 2023, avant l'ouverture, ce qui suggère une anticipation par les acheteurs.
 
 ## Limites
