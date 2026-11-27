@@ -84,6 +84,7 @@ Les notebooks ne contiennent presque pas de code : les calculs sont dans `src/vr
 │   ├── 01_exploration.ipynb     # analyse descriptive
 │   └── 02_analyse_finale.ipynb  # effet de la distance, conclusions
 ├── outputs/
+│   ├── dvf-stations/        # données dvf/stations téléchargées et nettoyées 
 │   ├── figures/             # figures du rapport
 │   └── tables/              # tableaux de résultats
 ├── src/vrai_prix/
