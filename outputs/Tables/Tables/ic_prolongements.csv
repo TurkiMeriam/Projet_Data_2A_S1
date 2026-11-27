@@ -1,0 +1,8 @@
+,par commune,par commune,par commune,par commune,par vente,par vente,par vente,par vente,"par vente, surface constante","par vente, surface constante","par vente, surface constante","par vente, surface constante","par commune, surface constante","par commune, surface constante","par commune, surface constante","par commune, surface constante"
+,ecart_indices,ic_bas,ic_haut,significatif_5%,ecart_indices,ic_bas,ic_haut,significatif_5%,ecart_indices,ic_bas,ic_haut,significatif_5%,ecart_indices,ic_bas,ic_haut,significatif_5%
+annee,,,,,,,,,,,,,,,,
+2021,0.0,0.0,0.0,False,0.0,0.0,0.0,False,0.0,0.0,0.0,False,0.0,0.0,0.0,False
+2022,2.4,-7.1,15.1,False,2.4,-4.5,11.0,False,2.1,-4.9,8.2,False,2.1,-6.3,10.5,False
+2023,10.2,-3.3,25.5,False,10.2,2.1,18.7,True,13.5,6.2,18.8,True,13.5,0.7,22.6,True
+2024,3.8,-5.9,15.5,False,3.8,-2.9,11.7,False,3.3,-2.3,9.1,False,3.3,-6.6,14.0,False
+2025,16.4,1.2,30.0,True,16.4,9.4,24.3,True,14.6,7.9,20.1,True,14.6,1.1,22.9,True

@@ -1,0 +1,7 @@
+code_etape,etape,n_mutations,perte,perte_vs_etape_prec_%,part_conservee_%
+mutations_brutes,"Mutations brutes (75, 92, 93, 94 ; 2021-2025)",552046,0,0.0,100.0
+apres_nature_vente,"Ventes simples (hors VEFA, échanges, adjudications)",491436,60610,11.0,89.0
+apres_disposition_unique,Une seule disposition par mutation,488007,3429,0.7,88.4
+apres_un_seul_appartement,"Un seul appartement, ni maison ni local",330167,157840,32.3,59.8
+apres_variables_plausibles,"Prix, surface (9-300 m²) et coordonnées valides",327123,3044,0.9,59.3
+apres_filtre_prix_m2,Prix au m² entre 1 500 et 30 000 €,319947,7176,2.2,58.0

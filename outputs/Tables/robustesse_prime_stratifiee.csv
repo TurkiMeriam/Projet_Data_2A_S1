@@ -1,12 +1,12 @@
-specification,zone,prime_%,mediane_cellules_%,q25_%,q75_%,part_cellules_positives_%,n_cellules
-"référence : <300 m vs ≥600 m, 10 ventes min.",Paris,8.9,6.91,-1.21,15.4,69.23,39.0
-"référence : <300 m vs ≥600 m, 10 ventes min.",Petite couronne,7.81,4.89,-2.9,13.99,66.15,582.0
-<200 m vs ≥500 m,Paris,4.57,3.84,0.4,10.14,77.6,125.0
-<200 m vs ≥500 m,Petite couronne,5.42,5.04,-2.77,12.08,66.86,344.0
-<400 m vs ≥800 m,Petite couronne,8.58,4.82,-2.98,15.83,66.84,570.0
-20 ventes min. par groupe,Paris,3.07,-4.21,-7.36,12.07,40.0,5.0
-20 ventes min. par groupe,Petite couronne,8.24,5.44,-0.69,12.82,71.43,322.0
-5 ventes min. par groupe,Paris,8.55,7.07,-0.78,14.16,72.22,90.0
-5 ventes min. par groupe,Petite couronne,7.55,4.54,-3.81,14.89,64.58,895.0
-sans écarter les prix extrêmes,Paris,9.17,6.88,-0.91,17.96,70.0,40.0
-sans écarter les prix extrêmes,Petite couronne,7.76,5.05,-3.3,14.43,66.05,595.0
+specification,zone,prime_%,mediane_cellules_%,q25_%,q75_%,part_cellules_positives_%,n_cellules,n_communes
+"référence : <300 m vs ≥600 m, 10 ventes min.",Paris,8.9,6.91,-1.21,15.4,69.23,39.0,5.0
+"référence : <300 m vs ≥600 m, 10 ventes min.",Petite couronne,7.81,4.89,-2.9,13.99,66.15,582.0,59.0
+<200 m vs ≥500 m,Paris,4.57,3.84,0.4,10.14,77.6,125.0,9.0
+<200 m vs ≥500 m,Petite couronne,5.42,5.04,-2.77,12.08,66.86,344.0,44.0
+<400 m vs ≥800 m,Petite couronne,8.58,4.82,-2.98,15.83,66.84,570.0,62.0
+20 ventes min. par groupe,Paris,3.07,-4.21,-7.36,12.07,40.0,5.0,3.0
+20 ventes min. par groupe,Petite couronne,8.24,5.44,-0.69,12.82,71.43,322.0,39.0
+5 ventes min. par groupe,Paris,8.55,7.07,-0.78,14.16,72.22,90.0,6.0
+5 ventes min. par groupe,Petite couronne,7.55,4.54,-3.81,14.89,64.58,895.0,73.0
+sans écarter les prix extrêmes,Paris,9.17,6.88,-0.91,17.96,70.0,40.0,6.0
+sans écarter les prix extrêmes,Petite couronne,7.76,5.05,-3.3,14.43,66.05,595.0,59.0

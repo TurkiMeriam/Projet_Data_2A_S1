@@ -167,26 +167,60 @@ def prix_relatif_tranches(var: pd.DataFrame):
 
 
 def ecarts_stratifies_barres(res: pd.DataFrame):
+    """Écart moyen pondéré à la tranche de référence ; barres d'erreur = IC à 95 % si `res` les contient
+    (sortie de `analysis.ic_ecarts`)."""
     fig, axes = plt.subplots(1, 2, figsize=(11, 4), sharey=True)
+    avec_ic = {"ic_bas_moyenne", "ic_haut_moyenne"} <= set(res.columns)
     for ax, zone in zip(axes, ZONES):
         g = res[res["zone"] == zone]
-        ax.bar(g["tranche"].astype(str), g["ecart_pct"], color=COULEURS[zone])
+        err = None
+        if avec_ic:
+            err = np.vstack([g["ecart_pct"] - g["ic_bas_moyenne"], g["ic_haut_moyenne"] - g["ecart_pct"]])
+        ax.bar(g["tranche"].astype(str), g["ecart_pct"], color=COULEURS[zone], yerr=err, capsize=4,
+               error_kw={"lw": 1, "ecolor": "black"})
         ax.axhline(0, color="black", lw=0.8)
         ax.set(title=zone, xlabel="Distance à la station (m)")
     axes[0].set_ylabel(f"Écart de prix vs {REFERENCE} m (%)")
+    if avec_ic:
+        fig.suptitle("Écart à biens comparables (barres : intervalle de confiance à 95 %, bootstrap par commune)",
+                     fontsize=10)
     _sauver(fig, "ecarts_stratifies.png")
     return fig
 
 
+def courbe_modes_par_zone(table: pd.DataFrame):
+    """Prix médian par tranche de distance pour le métro et le RER, à zone constante (un panneau par zone)."""
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+    for ax, zone in zip(axes, ZONES):
+        g = table[table["zone"] == zone]
+        for mode, style in [("METRO", "-o"), ("RER", "--s")]:
+            col = f"mediane_{mode}"
+            if col in g:
+                h = g.dropna(subset=[col])
+                ax.plot(h["tranche"].astype(str), h[col], style, color=COULEURS[zone], label=mode)
+        ax.set(title=zone, xlabel="Distance à la station (m)")
+        ax.tick_params(axis="x", rotation=35)
+        ax.legend(frameon=False)
+    axes[0].set_ylabel("Prix médian (€/m²)")
+    _sauver(fig, "prix_metro_vs_rer_par_zone.png")
+    return fig
+
+
 def prime_stratifiee_annee(res: pd.DataFrame):
+    """Prime proche/loin par année. Zone grisée : IC à 95 % (bootstrap par commune) si `res` vient de
+    `analysis.ic_prime(..., par_annee=True)`, sinon moitié centrale des cellules (q25-q75)."""
+    avec_ic = {"ic_bas_moyenne", "ic_haut_moyenne"} <= set(res.columns)
+    bas, haut = ("ic_bas_moyenne", "ic_haut_moyenne") if avec_ic else ("q25_%", "q75_%")
     fig, ax = plt.subplots(figsize=(8, 4.5))
     for zone, g in res.groupby("zone"):
-        ax.plot(g["annee"], g["prime_%"], marker="o", label=zone, color=COULEURS[zone])
-        ax.fill_between(g["annee"], g["q25_%"], g["q75_%"], alpha=0.15, color=COULEURS[zone])
+        annees = g["annee"].astype(int)
+        ax.plot(annees, g["prime_%"], marker="o", label=zone, color=COULEURS[zone])
+        ax.fill_between(annees, g[bas], g[haut], alpha=0.15, color=COULEURS[zone])
     ax.axhline(0, color="black", lw=0.8)
-    ax.set_xticks(sorted(res["annee"].unique()))
+    ax.set_xticks(sorted(res["annee"].astype(int).unique()))
+    legende = "IC à 95 %" if avec_ic else "50 % des cellules"
     ax.set(xlabel="Année", ylabel="Prime de proximité (%)",
-           title="Biens < 300 m contre > 600 m (zone grisée : 50 % des cellules)")
+           title=f"Biens < 300 m contre ≥ 600 m (zone grisée : {legende})")
     ax.legend(frameon=False)
     _sauver(fig, "prime_stratifiee_annee.png")
     return fig

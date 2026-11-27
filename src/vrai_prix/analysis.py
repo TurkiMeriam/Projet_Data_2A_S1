@@ -49,14 +49,35 @@ def charger_donnees() -> pd.DataFrame:
     return df
 
 
+ETAPES_NETTOYAGE = {
+    "mutations_brutes": "Mutations brutes (75, 92, 93, 94 ; 2021-2025)",
+    "apres_nature_vente": "Ventes simples (hors VEFA, échanges, adjudications)",
+    "apres_disposition_unique": "Une seule disposition par mutation",
+    "apres_un_seul_appartement": "Un seul appartement, ni maison ni local",
+    "apres_variables_plausibles": "Prix, surface (9-300 m²) et coordonnées valides",
+    "apres_filtre_prix_m2": "Prix au m² entre 1 500 et 30 000 €",
+    "mutations_finales": "Base finale",
+}
+
+
 def rapport_nettoyage() -> pd.DataFrame | None:
-    """Tableau « mutations restantes à chaque étape », s'il a été produit par dvf.py."""
+    """Entonnoir de nettoyage : mutations restantes à chaque étape (produit par dvf.py).
+
+    `perte` et `perte_vs_etape_prec_%` comparent chaque étape à la précédente ;
+    `part_conservee_%` compare chaque étape aux mutations brutes.
+    """
     chemin = config.DVF_CLEAN_PARQUET.with_name("dvf_appartements_rapport.csv")
     if not chemin.exists():
         return None
     r = pd.read_csv(chemin, index_col=0)["n_mutations"].to_frame()
+    r = r[~r.index.duplicated(keep="first")]
+    if "mutations_finales" in r.index and len(r) > 1 and r.loc["mutations_finales", "n_mutations"] == r["n_mutations"].iloc[-2]:
+        r = r.drop(index="mutations_finales")          # doublon de la dernière étape
+    r.insert(0, "etape", [ETAPES_NETTOYAGE.get(i, i) for i in r.index])
     r["perte"] = -r["n_mutations"].diff().fillna(0).astype(int)
+    r["perte_vs_etape_prec_%"] = (100 * r["perte"] / r["n_mutations"].shift()).fillna(0).round(1)
     r["part_conservee_%"] = (100 * r["n_mutations"] / r["n_mutations"].iloc[0]).round(1)
+    r.index.name = "code_etape"
     return r
 
 
@@ -265,6 +286,47 @@ def comparaison_modes(df: pd.DataFrame, n_min: int = 30):
     return resume.round(2), pd.DataFrame(lignes).round(2), g[g["n"] >= n_min]
 
 
+def modes_par_zone(df: pd.DataFrame, n_min: int = 30) -> pd.DataFrame:
+    """Prix médian par tranche de distance, mode (métro, RER) et zone.
+
+    Permet de comparer métro et RER **à zone constante** : sur l'ensemble, le métro est surtout
+    parisien et le RER surtout en petite couronne, ce qui mélange effet du mode et effet du lieu.
+    """
+    d = df.assign(mode_station=df["modes_station"].map(extraire_mode))
+    d = d[d["mode_station"].isin(["METRO", "RER"])].copy()
+    d["tranche"] = tranche(d["dist_station_m"], BORNES_MODES)
+    g = (d.groupby(["zone", "mode_station", "tranche"], observed=True)["prix_m2"]
+           .agg(n="size", mediane="median").reset_index())
+    g = g[g["n"] >= n_min]
+    t = g.pivot_table(index=["zone", "tranche"], columns="mode_station", values=["n", "mediane"], observed=True)
+    t.columns = [f"{stat}_{mode}" for stat, mode in t.columns]
+    t = t.reset_index()
+    if {"mediane_METRO", "mediane_RER"} <= set(t.columns):
+        t["ecart_RER_vs_METRO_%"] = (t["mediane_RER"] / t["mediane_METRO"] - 1) * 100
+    return t.round(1)
+
+
+def baisse_modes_par_zone(df: pd.DataFrame, n_min: int = 30, de: str = "0-200", a: str | None = None) -> pd.DataFrame:
+    """Baisse du prix médian entre la tranche `de` et la tranche la plus éloignée disponible (ou `a`),
+    pour chaque zone et chaque mode."""
+    t = modes_par_zone(df, n_min)
+    lignes = []
+    for zone, g in t.groupby("zone", sort=False):
+        for mode in ("METRO", "RER"):
+            col = f"mediane_{mode}"
+            if col not in g:
+                continue
+            h = g.dropna(subset=[col])
+            if de not in set(h["tranche"].astype(str)) or len(h) < 2:
+                continue
+            fin = a if a is not None else str(h["tranche"].iloc[-1])
+            p0 = h.loc[h["tranche"].astype(str) == de, col].iloc[0]
+            p1 = h.loc[h["tranche"].astype(str) == fin, col].iloc[0]
+            lignes.append({"zone": zone, "mode": mode, "tranche_depart": de, "tranche_arrivee": fin,
+                           "mediane_depart": p0, "mediane_arrivee": p1, "baisse_%": (p1 / p0 - 1) * 100})
+    return pd.DataFrame(lignes).round(1)
+
+
 # --------------------------------------------------------------------------- effet de la distance, sans modèle
 
 BORNES_REF = [0, 100, 200, 400, 600, 1000]          # tranches de comparaison à la référence
@@ -333,6 +395,23 @@ def _moyenne_ponderee(g: pd.DataFrame, col: str, poids: str) -> float:
     return float(np.average(g[col], weights=g[poids]))
 
 
+CLES_CELLULE = ["zone", "commune_id", "annee", "classe_surface"]
+LABELS_REF = ["0-100", "100-200", "200-400", "400-600", "600-1000"]
+
+
+def cellules_ecarts(d: pd.DataFrame, n_min: int = 10) -> pd.DataFrame:
+    """Une ligne par cellule (commune, année, classe de surface) et par tranche : écart (%) de la médiane
+    de la tranche à celle de la tranche de référence 200-400 m de la même cellule."""
+    x = d.assign(tranche=pd.cut(d["dist_station_m"], BORNES_REF, right=False, labels=LABELS_REF).astype(str))
+    x = x[x["tranche"] != "nan"]
+    t = x.groupby(CLES_CELLULE + ["tranche"], observed=True)["prix_m2"].agg(n="size", mediane="median").reset_index()
+    r = t[t["tranche"] == REFERENCE].rename(columns={"n": "n_ref", "mediane": "mediane_ref"}).drop(columns="tranche")
+    t = t.merge(r, on=CLES_CELLULE)
+    t = t[(t["n"] >= n_min) & (t["n_ref"] >= n_min) & (t["tranche"] != REFERENCE)].copy()
+    t["ecart_pct"] = (t["mediane"] / t["mediane_ref"] - 1) * 100
+    return t
+
+
 def ecarts_stratifies(d: pd.DataFrame, ref: tuple = (200, 400), n_min: int = 10) -> pd.DataFrame:
     """Écart de prix de chaque tranche par rapport à la tranche de référence, à biens comparables.
 
@@ -340,23 +419,30 @@ def ecarts_stratifies(d: pd.DataFrame, ref: tuple = (200, 400), n_min: int = 10)
     (une « cellule »). Dans chaque cellule, écart = médiane de la tranche / médiane de la référence - 1.
     Les écarts sont ensuite moyennés sur les cellules, pondérés par le nombre de ventes de la tranche.
     """
-    cles = ["zone", "commune_id", "annee", "classe_surface"]
-    d = d.assign(tranche=pd.cut(d["dist_station_m"], BORNES_REF, right=False,
-                                labels=["0-100", "100-200", "200-400", "400-600", "600-1000"]).astype(str))
-    d = d[d["tranche"] != "nan"]
-    t = d.groupby(cles + ["tranche"], observed=True)["prix_m2"].agg(n="size", mediane="median").reset_index()
-    r = t[t["tranche"] == REFERENCE].rename(columns={"n": "n_ref", "mediane": "mediane_ref"}).drop(columns="tranche")
-    t = t.merge(r, on=cles)
-    t = t[(t["n"] >= n_min) & (t["n_ref"] >= n_min) & (t["tranche"] != REFERENCE)]
-    t["ecart_pct"] = (t["mediane"] / t["mediane_ref"] - 1) * 100
-    res = (t.groupby(["zone", "tranche"], observed=True)[["ecart_pct", "n"]]
+    t = cellules_ecarts(d, n_min)
+    res = (t.groupby(["zone", "tranche"], observed=True)[["ecart_pct", "n", "commune_id"]]
              .apply(lambda g: pd.Series({"ecart_pct": _moyenne_ponderee(g, "ecart_pct", "n"),
                                          "ecart_median_cellules_pct": g["ecart_pct"].median(),
                                          "part_cellules_positives_%": (g["ecart_pct"] > 0).mean() * 100,
-                                         "n_cellules": len(g), "n_ventes": int(g["n"].sum())}))
+                                         "n_cellules": len(g), "n_communes": g["commune_id"].nunique(),
+                                         "n_ventes": int(g["n"].sum())}))
              .reset_index())
     res["tranche"] = pd.Categorical(res["tranche"], ["0-100", "100-200", "400-600", "600-1000"], ordered=True)
     return res.sort_values(["zone", "tranche"]).round(2).reset_index(drop=True)
+
+
+def cellules_prime(d: pd.DataFrame, proche: float = 300, loin: float = 600, n_min: int = 10) -> pd.DataFrame:
+    """Une ligne par cellule : prime (%) des ventes à moins de `proche` m sur celles à plus de `loin` m,
+    et poids = plus petit des deux effectifs."""
+    x = d.assign(groupe=np.select([d["dist_station_m"] < proche, d["dist_station_m"] >= loin], ["proche", "loin"], "autre"))
+    x = x[x["groupe"] != "autre"]
+    t = x.groupby(CLES_CELLULE + ["groupe"], observed=True)["prix_m2"].agg(n="size", mediane="median").unstack("groupe").dropna()
+    t.columns = [f"{a}_{b}" for a, b in t.columns]
+    t = t.reset_index()
+    t = t[(t["n_proche"] >= n_min) & (t["n_loin"] >= n_min)].copy()
+    t["prime_pct"] = (t["mediane_proche"] / t["mediane_loin"] - 1) * 100
+    t["poids"] = t[["n_proche", "n_loin"]].min(axis=1)
+    return t
 
 
 def prime_stratifiee(d: pd.DataFrame, proche: float = 300, loin: float = 600, n_min: int = 10,
@@ -366,24 +452,139 @@ def prime_stratifiee(d: pd.DataFrame, proche: float = 300, loin: float = 600, n_
     Même principe que `ecarts_stratifies` : médiane proche / médiane loin - 1 dans chaque cellule
     (commune, année, classe de surface), moyennée avec pour poids le plus petit des deux effectifs.
     """
-    cles = ["zone", "commune_id", "annee", "classe_surface"]
-    x = d.assign(groupe=np.select([d["dist_station_m"] < proche, d["dist_station_m"] >= loin], ["proche", "loin"], "autre"))
-    x = x[x["groupe"] != "autre"]
-    t = x.groupby(cles + ["groupe"], observed=True)["prix_m2"].agg(n="size", mediane="median").unstack("groupe").dropna()
-    t.columns = [f"{a}_{b}" for a, b in t.columns]
-    t = t.reset_index()
-    t = t[(t["n_proche"] >= n_min) & (t["n_loin"] >= n_min)].copy()
-    t["prime_pct"] = (t["mediane_proche"] / t["mediane_loin"] - 1) * 100
-    t["poids"] = t[["n_proche", "n_loin"]].min(axis=1)
+    t = cellules_prime(d, proche, loin, n_min)
     groupes = ["zone", "annee"] if par_annee else ["zone"]
-    res = (t.groupby(groupes)[["prime_pct", "poids"]]
+    res = (t.groupby(groupes)[["prime_pct", "poids", "commune_id"]]
              .apply(lambda g: pd.Series({"prime_%": _moyenne_ponderee(g, "prime_pct", "poids"),
                                          "mediane_cellules_%": g["prime_pct"].median(),
                                          "q25_%": g["prime_pct"].quantile(.25), "q75_%": g["prime_pct"].quantile(.75),
                                          "part_cellules_positives_%": (g["prime_pct"] > 0).mean() * 100,
-                                         "n_cellules": len(g)}))
+                                         "n_cellules": len(g), "n_communes": g["commune_id"].nunique()}))
              .reset_index())
     return res.round(2)
+
+
+# --------------------------------------------------------------------------- incertitude (bootstrap par commune)
+
+N_BOOT = 1000
+GRAINE = 2025
+
+
+def bootstrap_cellules(cellules: pd.DataFrame, valeur: str, poids: str, groupes: list[str],
+                       n_boot: int = N_BOOT, graine: int = GRAINE) -> pd.DataFrame:
+    """Rééchantillonne les **communes** (avec remise, séparément dans chaque zone) et recalcule, pour
+    chaque groupe, la moyenne pondérée et la médiane des cellules.
+
+    Les ventes d'une même commune ne sont pas indépendantes : tirer les communes plutôt que les ventes
+    ou les cellules donne des intervalles plus honnêtes. L'intervalle ne couvre que l'aléa
+    d'échantillonnage, pas les biais (composition des quartiers, qualité des biens...).
+    Renvoie une ligne par tirage et par groupe (colonnes `tirage`, groupes, `moyenne`, `mediane`).
+    """
+    rng = np.random.default_rng(graine)
+    sorties = []
+    for zone, cz in cellules.groupby("zone"):
+        communes = np.sort(cz["commune_id"].unique())
+        code = pd.Categorical(cz["commune_id"], categories=communes).codes
+        x, w = cz[valeur].to_numpy(float), cz[poids].to_numpy(float)
+        autres = [g for g in groupes if g != "zone"]
+        cles = cz[autres].astype(str).agg("|".join, axis=1).to_numpy() if autres else np.array(["_"] * len(cz))
+        groupes_uniques = pd.unique(cles)
+        masques = {k: cles == k for k in groupes_uniques}
+        for b in range(n_boot):
+            m = rng.multinomial(len(communes), np.full(len(communes), 1 / len(communes)))[code]
+            for k, msk in masques.items():
+                mm, xx, ww = m[msk], x[msk], w[msk]
+                if mm.sum() == 0:
+                    moy = med = np.nan
+                else:
+                    moy = np.sum(mm * ww * xx) / np.sum(mm * ww)
+                    med = np.median(np.repeat(xx, mm))
+                ligne = {"tirage": b, "zone": zone, "moyenne": moy, "mediane": med}
+                if autres:
+                    ligne.update(dict(zip(autres, k.split("|"))))
+                sorties.append(ligne)
+    return pd.DataFrame(sorties)
+
+
+def _resumer_ic(estimations: pd.DataFrame, tirages: pd.DataFrame, cles: list[str],
+                col_moy: str, col_med: str, niveau: float = 0.95) -> pd.DataFrame:
+    a = (1 - niveau) / 2
+    q = (tirages.groupby(cles)[["moyenne", "mediane"]]
+                .quantile([a, 1 - a]).unstack())
+    q.columns = ["ic_bas_moyenne", "ic_haut_moyenne", "ic_bas_mediane", "ic_haut_mediane"]
+    q = q.reset_index()
+    est = estimations.copy()
+    for c in cles:
+        est[c] = est[c].astype(str)
+        q[c] = q[c].astype(str)
+    out = est.merge(q, on=cles, how="left")
+    return out[cles + [col_moy, "ic_bas_moyenne", "ic_haut_moyenne", col_med, "ic_bas_mediane", "ic_haut_mediane"]
+               + [c for c in ["n_cellules", "n_communes"] if c in out]].round(2)
+
+
+def ic_prime(d: pd.DataFrame, proche: float = 300, loin: float = 600, n_min: int = 10,
+             par_annee: bool = False, n_boot: int = N_BOOT, graine: int = GRAINE):
+    """Prime proche/loin avec intervalles de confiance à 95 % (bootstrap par commune).
+
+    Renvoie (tableau, tirages) ; les tirages servent à comparer les zones (`difference_zones`)."""
+    cel = cellules_prime(d, proche, loin, n_min)
+    groupes = ["zone", "annee"] if par_annee else ["zone"]
+    tir = bootstrap_cellules(cel, "prime_pct", "poids", groupes, n_boot, graine)
+    est = prime_stratifiee(d, proche, loin, n_min, par_annee)
+    return _resumer_ic(est, tir, groupes, "prime_%", "mediane_cellules_%"), tir
+
+
+def ic_ecarts(d: pd.DataFrame, n_min: int = 10, n_boot: int = N_BOOT, graine: int = GRAINE):
+    """Écarts à la tranche 200-400 m avec intervalles de confiance à 95 % (bootstrap par commune).
+
+    Renvoie (tableau, tirages)."""
+    cel = cellules_ecarts(d, n_min)
+    tir = bootstrap_cellules(cel, "ecart_pct", "n", ["zone", "tranche"], n_boot, graine)
+    est = ecarts_stratifies(d, n_min=n_min)
+    out = _resumer_ic(est, tir, ["zone", "tranche"], "ecart_pct", "ecart_median_cellules_pct")
+    out = out.merge(est[["zone", "tranche", "part_cellules_positives_%", "n_ventes"]].astype({"tranche": str}),
+                    on=["zone", "tranche"])
+    out["tranche"] = pd.Categorical(out["tranche"], ["0-100", "100-200", "400-600", "600-1000"], ordered=True)
+    return out.sort_values(["zone", "tranche"]).reset_index(drop=True), tir
+
+
+def difference_zones(tirages: pd.DataFrame, estimations: pd.DataFrame, filtre: dict | None = None,
+                     niveau: float = 0.95) -> pd.DataFrame:
+    """Différence Paris - petite couronne (moyenne pondérée et médiane des cellules), avec intervalle à 95 %.
+
+    Les deux zones sont tirées indépendamment : la différence tirage par tirage donne son intervalle.
+    `estimations` : sortie de `ic_prime` ou `ic_ecarts` ; `filtre` : par ex. {"tranche": "600-1000"}.
+    """
+    t, e = tirages.copy(), estimations.copy()
+    for k, v in (filtre or {}).items():
+        t, e = t[t[k].astype(str) == str(v)], e[e[k].astype(str) == str(v)]
+    a = (1 - niveau) / 2
+    col_moy = "prime_%" if "prime_%" in e else "ecart_pct"
+    col_med = "mediane_cellules_%" if "mediane_cellules_%" in e else "ecart_median_cellules_pct"
+    est = e.set_index("zone")
+    piv = t.pivot_table(index="tirage", columns="zone", values=["moyenne", "mediane"])
+    lignes = []
+    for stat, col in [("moyenne pondérée", col_moy), ("médiane des cellules", col_med)]:
+        cle = "moyenne" if stat.startswith("moyenne") else "mediane"
+        diff = (piv[(cle, "Paris")] - piv[(cle, "Petite couronne")]).dropna()
+        lignes.append({"statistique": stat, "Paris": est.loc["Paris", col], "Petite couronne": est.loc["Petite couronne", col],
+                       "difference_Paris_moins_PC": est.loc["Paris", col] - est.loc["Petite couronne", col],
+                       "ic_bas": diff.quantile(a), "ic_haut": diff.quantile(1 - a)})
+    return pd.DataFrame(lignes).round(2)
+
+
+def composition_tranches(d: pd.DataFrame) -> pd.DataFrame:
+    """Prix médian **de la commune** (même année) des ventes de chaque tranche de distance.
+
+    Si ce prix varie d'une tranche à l'autre, les écarts de prix bruts entre tranches mélangent
+    l'effet de la distance et le fait que les ventes proches ne sont pas dans les mêmes communes.
+    """
+    x = d.assign(tranche=pd.cut(d["dist_station_m"], BORNES_REF, right=False, labels=LABELS_REF),
+                 prix_commune=d.groupby(["commune_id", "annee"])["prix_m2"].transform("median"))
+    return (x.groupby(["zone", "tranche"], observed=True)
+              .agg(n=("prix_m2", "size"), prix_median_ventes=("prix_m2", "median"),
+                   prix_median_commune=("prix_commune", "median"))
+              .reset_index().round(0))
 
 
 def robustesse_prime(d_brut: pd.DataFrame) -> pd.DataFrame:
@@ -461,18 +662,82 @@ def groupes_prolongements(d_prol: pd.DataFrame, rayon: float = 600, sans_station
     return g
 
 
-def evolution_prolongements(g_prol: pd.DataFrame) -> pd.DataFrame:
+def evolution_prolongements(g_prol: pd.DataFrame, surface_constante: bool = False) -> pd.DataFrame:
     """Par année et par groupe : nombre de ventes, prix médian au m² et indice (base 100 la première année).
 
     `ecart_indices` = indice du groupe desservi - indice du groupe témoin (en points).
+    Avec `surface_constante=True`, le prix de chaque groupe et de chaque année est la moyenne des médianes
+    par classe de surface, pondérées par la part de chaque classe sur toute la période dans ce groupe :
+    l'indice ne bouge plus si la taille des logements vendus change d'une année à l'autre.
     """
-    t = g_prol.pivot_table(index="annee", columns="groupe", values="prix_m2",
-                           aggfunc=["size", "median"]).sort_index()
-    out = pd.DataFrame(index=t.index)
+    if surface_constante:
+        g = g_prol.assign(classe_surface=pd.cut(g_prol["surface_reelle_bati"], CLASSES_SURFACE, right=False))
+        med = g.groupby(["groupe", "annee", "classe_surface"], observed=True)["prix_m2"].median().rename("med")
+        parts = g.groupby(["groupe", "classe_surface"], observed=True).size()
+        parts = (parts / parts.groupby(level="groupe").transform("sum")).rename("part")
+        m = med.reset_index().merge(parts.reset_index(), on=["groupe", "classe_surface"])
+        prix = (m.assign(x=m["med"] * m["part"]).groupby(["annee", "groupe"])[["x", "part"]].sum()
+                  .eval("x / part").unstack("groupe"))
+        n = g.pivot_table(index="annee", columns="groupe", values="prix_m2", aggfunc="size")
+    else:
+        prix = g_prol.pivot_table(index="annee", columns="groupe", values="prix_m2", aggfunc="median")
+        n = g_prol.pivot_table(index="annee", columns="groupe", values="prix_m2", aggfunc="size")
+    prix, n = prix.sort_index(), n.sort_index()
+    out = pd.DataFrame(index=prix.index)
     for grp in (DESSERVI, TEMOIN):
-        out[f"n {grp}"] = t[("size", grp)].astype(int)
-        out[f"prix_median {grp}"] = t[("median", grp)].round(0)
-        out[f"indice {grp}"] = (100 * t[("median", grp)] / t[("median", grp)].iloc[0]).round(1)
+        out[f"n {grp}"] = n[grp].astype(int)
+        out[f"prix_median {grp}"] = prix[grp].round(0)
+        out[f"indice {grp}"] = (100 * prix[grp] / prix[grp].iloc[0]).round(1)
     out["ecart_indices"] = (out[f"indice {DESSERVI}"] - out[f"indice {TEMOIN}"]).round(1)
     out.index.name = "annee"
     return out
+
+
+def profil_groupes_prolongements(g_prol: pd.DataFrame) -> pd.DataFrame:
+    """Comparabilité des deux groupes : effectifs, communes, desserte avant 2024, taille des biens, prix 2021."""
+    lignes = []
+    for grp, h in g_prol.groupby("groupe"):
+        part = h["nom_commune"].value_counts()
+        lignes.append({"groupe": grp, "ventes": len(h), "communes": h["commune_id"].nunique(),
+                       "commune_principale": part.index[0], "ventes_commune_principale": int(part.iloc[0]),
+                       "part_commune_principale_%": 100 * part.iloc[0] / len(h),
+                       "dist_mediane_station_avant_2024_m": h["dist_avant_m"].median(),
+                       "surface_mediane_m2": h["surface_reelle_bati"].median(),
+                       "prix_median_2021": h.loc[h["annee"] == h["annee"].min(), "prix_m2"].median()})
+    return pd.DataFrame(lignes).set_index("groupe").round(1)
+
+
+def ic_prolongements(g_prol: pd.DataFrame, n_boot: int = N_BOOT, graine: int = GRAINE,
+                     surface_constante: bool = False, par: str = "commune", niveau: float = 0.95) -> pd.DataFrame:
+    """Intervalle de confiance à 95 % de l'écart d'indices (desservi - témoin), par bootstrap.
+
+    - `par="commune"` (par défaut) : à chaque tirage, on rééchantillonne avec remise les communes du
+      périmètre, avec toutes leurs ventes (desservies et témoins). C'est l'option prudente : les ventes
+      d'une même commune ne sont pas indépendantes ;
+    - `par="vente"` : on rééchantillonne les ventes dans chaque groupe et chaque année. Les intervalles
+      sont plus étroits, mais supposent des ventes indépendantes (hypothèse optimiste).
+    """
+    rng = np.random.default_rng(graine)
+    communes = g_prol["commune_id"].unique()
+    par_commune = {c: h for c, h in g_prol.groupby("commune_id")}
+    strates = [h for _, h in g_prol.groupby(["groupe", "annee"])]
+    ecarts = []
+    for _ in range(n_boot):
+        if par == "vente":
+            echantillon = pd.concat([h.iloc[rng.integers(0, len(h), len(h))] for h in strates], ignore_index=True)
+        else:
+            tirage = rng.choice(communes, size=len(communes), replace=True)
+            echantillon = pd.concat([par_commune[c] for c in tirage], ignore_index=True)
+        if echantillon["groupe"].nunique() < 2:
+            continue
+        try:
+            ecarts.append(evolution_prolongements(echantillon, surface_constante)["ecart_indices"])
+        except KeyError:            # une année sans vente dans un groupe
+            continue
+    tir = pd.DataFrame(ecarts)
+    a = (1 - niveau) / 2
+    est = evolution_prolongements(g_prol, surface_constante)["ecart_indices"]
+    out = pd.DataFrame({"ecart_indices": est, "ic_bas": tir.quantile(a), "ic_haut": tir.quantile(1 - a)})
+    out["significatif_5%"] = (out["ic_bas"] > 0) | (out["ic_haut"] < 0)
+    out.loc[out.index.min(), "significatif_5%"] = False      # année de base : écart nul par construction
+    return out.round(1)
