@@ -48,7 +48,7 @@ python -m vrai_prix.dvf
 python -m vrai_prix.stations
 ```
 
-Les deux étapes ne retéléchargent pas ce qui est déjà présent (pour tout refaire, supprimer le dossier `data/`). Quelques options utiles :
+Les deux étapes ne retéléchargent pas ce qui est déjà présent. Quelques options qui nous seront utiles :
 
 ```bash
 python -m vrai_prix.dvf --years 2024 2025 --deps 75      # sous-ensemble
