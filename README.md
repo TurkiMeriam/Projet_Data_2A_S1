@@ -21,7 +21,6 @@ L'analyse est descriptive : elle repose sur des statistiques simples (médianes,
 
 Les données brutes sont trop volumineuses pour Git (plus de 100 Mo pour le DVF des quatre départements). Elles ne sont donc pas dans le dépôt : le code les télécharge depuis leur URL publique et les garde en cache dans `data/` (Les données DVF (brutes et nettoyées) et les stations IDFM sont versionnées dans `data/` pour que les notebooks tournent sans téléchargement). Chaque étape ne refait son travail que si le fichier est absent, ce qui évite de retélécharger à chaque exécution.
 
-Les chemins sont définis une seule fois, dans `src/vrai_prix/config.py`. Voir `docs/sources.md` pour les sources, les dates de téléchargement et les licences.
 
 ## Installation
 
