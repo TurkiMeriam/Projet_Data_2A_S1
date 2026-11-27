@@ -235,7 +235,6 @@ data/interim/*
 
 # Rendus lourds (les figures finales peuvent être ajoutées avec git add -f)
 # On versionne donc les figures et les petits tableaux, pas le reste
-# Rendus lourds
 outputs/*
 !outputs/figures/
 !outputs/Tables/

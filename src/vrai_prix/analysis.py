@@ -11,7 +11,7 @@ import pandas as pd
 
 from . import config
 
-TABLES = config.ROOT / "outputs" / "tables"
+TABLES = config.ROOT / "outputs" / "Tables"
 
 ZONES = ["Paris", "Petite couronne"]
 
@@ -22,19 +22,23 @@ LABELS_NOTE = ["0-100 m", "100-300 m", "300-500 m", ">500 m"]
 # --------------------------------------------------------------------------- données
 
 def charger_donnees() -> pd.DataFrame:
-    """Ventes nettoyées avec distance à la station la plus proche, plus `annee`, `zone` et `commune_id`.
+    nom = "dvf_appartements_stations"
+    dossiers = [config.DATA_PROCESSED, config.ROOT / "data" / "processed"]
+    chemins = [d / nom for d in dossiers]
 
-    Lit `dvf_appartements_stations.parquet` (ou `.csv` à défaut) dans data/processed.
-    """
-    base = config.DATA_PROCESSED / "dvf_appartements_stations"
-    if base.with_suffix(".parquet").exists():
-        df = pd.read_parquet(base.with_suffix(".parquet"))
-    elif base.with_suffix(".csv").exists():
-        df = pd.read_csv(base.with_suffix(".csv"), low_memory=False)
+    fichier = next((p.with_suffix(".parquet") for p in chemins if p.with_suffix(".parquet").exists()), None)
+    if fichier is not None:
+        df = pd.read_parquet(fichier)
     else:
-        raise FileNotFoundError(
-            f"{base.name}.parquet introuvable dans {config.DATA_PROCESSED}. Lancer d'abord :\n"
-            "  python -m vrai_prix.dvf\n  python -m vrai_prix.stations")
+        fichier = next((p.with_suffix(".csv") for p in chemins if p.with_suffix(".csv").exists()), None)
+        if fichier is None:
+            attendus = "\n".join(str(p.with_suffix(".parquet")) for p in chemins)
+            raise FileNotFoundError(
+                "Fichier dvf_appartements_stations.parquet introuvable. Chemins vérifiés :\n"
+                f"{attendus}\nLancer depuis la racine du projet :\n"
+                "  python -m vrai_prix.dvf\n  python -m vrai_prix.stations"
+            )
+        df = pd.read_csv(fichier, low_memory=False)
     df["date_mutation"] = pd.to_datetime(df["date_mutation"])
     df["annee"] = df["date_mutation"].dt.year
     # codes lus parfois comme des nombres (75 ou 75.0) : on les remet en texte
@@ -57,7 +61,7 @@ def rapport_nettoyage() -> pd.DataFrame | None:
 
 
 def sauver(tableau: pd.DataFrame, nom: str, index: bool = True) -> pd.DataFrame:
-    """Enregistre un tableau dans outputs/tables et le renvoie (pour l'afficher dans la foulée)."""
+    """Enregistre un tableau dans outputs/Tables et le renvoie (pour l'afficher dans la foulée)."""
     TABLES.mkdir(parents=True, exist_ok=True)
     tableau.to_csv(TABLES / nom, index=index)
     return tableau
@@ -345,12 +349,12 @@ def ecarts_stratifies(d: pd.DataFrame, ref: tuple = (200, 400), n_min: int = 10)
     t = t.merge(r, on=cles)
     t = t[(t["n"] >= n_min) & (t["n_ref"] >= n_min) & (t["tranche"] != REFERENCE)]
     t["ecart_pct"] = (t["mediane"] / t["mediane_ref"] - 1) * 100
-    res = (t.groupby(["zone", "tranche"], observed=True)
+    res = (t.groupby(["zone", "tranche"], observed=True)[["ecart_pct", "n"]]
              .apply(lambda g: pd.Series({"ecart_pct": _moyenne_ponderee(g, "ecart_pct", "n"),
                                          "ecart_median_cellules_pct": g["ecart_pct"].median(),
                                          "part_cellules_positives_%": (g["ecart_pct"] > 0).mean() * 100,
-                                         "n_cellules": len(g), "n_ventes": int(g["n"].sum())}),
-                    include_groups=False).reset_index())
+                                         "n_cellules": len(g), "n_ventes": int(g["n"].sum())}))
+             .reset_index())
     res["tranche"] = pd.Categorical(res["tranche"], ["0-100", "100-200", "400-600", "600-1000"], ordered=True)
     return res.sort_values(["zone", "tranche"]).round(2).reset_index(drop=True)
 
@@ -372,12 +376,13 @@ def prime_stratifiee(d: pd.DataFrame, proche: float = 300, loin: float = 600, n_
     t["prime_pct"] = (t["mediane_proche"] / t["mediane_loin"] - 1) * 100
     t["poids"] = t[["n_proche", "n_loin"]].min(axis=1)
     groupes = ["zone", "annee"] if par_annee else ["zone"]
-    res = (t.groupby(groupes)
+    res = (t.groupby(groupes)[["prime_pct", "poids"]]
              .apply(lambda g: pd.Series({"prime_%": _moyenne_ponderee(g, "prime_pct", "poids"),
                                          "mediane_cellules_%": g["prime_pct"].median(),
                                          "q25_%": g["prime_pct"].quantile(.25), "q75_%": g["prime_pct"].quantile(.75),
                                          "part_cellules_positives_%": (g["prime_pct"] > 0).mean() * 100,
-                                         "n_cellules": len(g)}), include_groups=False).reset_index())
+                                         "n_cellules": len(g)}))
+             .reset_index())
     return res.round(2)
 
 

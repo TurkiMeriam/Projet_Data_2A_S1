@@ -61,9 +61,9 @@ Fichiers produits (non versionnés) :
 
 - `data/raw/dvf/<année>/<département>.csv.gz` : fichiers DVF bruts
 - `data/raw/stations/emplacement_gares_idfm.geojson` : stations IDFM
-- `data/processed/dvf_appartements.parquet` : une ligne par vente d'appartement nettoyée
-- `data/processed/dvf_appartements_rapport.csv` : nombre de ventes restantes à chaque étape de nettoyage
-- `data/processed/dvf_appartements_stations.parquet` : ventes + distance à la station la plus proche
+- `data/processed/dvf-stations/dvf_appartements.parquet` : une ligne par vente d'appartement nettoyée
+- `data/processed/dvf-stations/dvf_appartements_rapport.csv` : nombre de ventes restantes à chaque étape de nettoyage
+- `data/processed/dvf-stations/dvf_appartements_stations.parquet` : ventes + distance à la station la plus proche
 
 Puis ouvrir les notebooks dans l'ordre (*Restart* puis *Run All*) :
 
@@ -78,7 +78,7 @@ Les notebooks ne contiennent presque pas de code : les calculs sont dans `src/vr
 .
 ├── data/
 │   ├── raw/                 # données brutes téléchargées (ignorées par Git)
-│   └── processed/           # données nettoyées (ignorées par Git)
+│   └── processed/dvf-stations/ # données nettoyées (ignorées par Git)
 ├── docs/sources.md          # sources, URL, dates, licences
 ├── notebooks/
 │   ├── 01_exploration.ipynb     # analyse descriptive
@@ -118,7 +118,7 @@ Les seuils sont modifiables dans `src/vrai_prix/config.py`.
 
 ## Résultats
 
-Les résultats détaillés sont dans les notebooks. Les tableaux et figures sont enregistrés dans `outputs/tables/` et `outputs/figures/`.
+Les résultats détaillés sont dans les notebooks. Les tableaux et figures sont enregistrés dans `outputs/Tables/` et `outputs/figures/`.
 
 - **Corrélation trompeuse à grande échelle.** Prix et distance sont fortement corrélés sur l'ensemble (Spearman ≈ −0,56 à −0,60), mais surtout parce que Paris est à la fois plus cher et mieux desservi. Rapporté au prix médian de sa commune, la corrélation tombe presque à zéro (0 à −0,06).
 - **La distance la plus valorisée se situe entre 100 et 400 m.** À biens comparables, le prix est stable jusqu'à 400 m puis baisse, surtout au-delà de 600 m (environ −6,5 % à Paris et −3 % en petite couronne entre 600 et 1 000 m, par rapport à 200-400 m). En petite couronne, on observe aussi une légère décote à moins de 100 m (≈ −3,5 %), compatible avec des nuisances, mais fondée sur peu de ventes.

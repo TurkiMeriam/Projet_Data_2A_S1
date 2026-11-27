@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import logging
 import re
 import time
@@ -18,43 +17,27 @@ import requests
 log = logging.getLogger("stations")
 
 # ---------------------------------------------------------------------------
-# Dossiers et récupération éventuelle de config.py s'il existe dans le dépôt
+# Configuration centralisée du projet
 # ---------------------------------------------------------------------------
-DOSSIER = Path(__file__).resolve().parent
-RACINE_PROJET = DOSSIER.parent if DOSSIER.name == "files" else DOSSIER
+from . import config
 
-_cfg = None
-for _candidat in [
-    DOSSIER / "config.py",
-    RACINE_PROJET / "config.py",
-    *RACINE_PROJET.glob("*/config.py"),
-]:
-    if _candidat.exists():
-        _spec = importlib.util.spec_from_file_location("_projet_config", _candidat)
-        if _spec and _spec.loader:
-            _cfg = importlib.util.module_from_spec(_spec)
-            _spec.loader.exec_module(_cfg)
-            break
+DOSSIER = Path(__file__).resolve().parent
+RACINE_PROJET = config.ROOT
 
 # ---------------------------------------------------------------------------
 # Paramètres
 # ---------------------------------------------------------------------------
-DATA_RAW = Path(getattr(_cfg, "DATA_RAW", RACINE_PROJET / "data" / "raw"))
-DATA_PROCESSED = Path(getattr(_cfg, "DATA_PROCESSED", RACINE_PROJET / "data" / "processed"))
+DATA_RAW = Path(config.DATA_RAW)
+DATA_PROCESSED = Path(config.DATA_PROCESSED)
 
-STATIONS_URL = getattr(
-    _cfg,
-    "STATIONS_URL",
-    "https://data.iledefrance-mobilites.fr/api/explore/v2.1/catalog/datasets/"
-    "emplacement-des-gares-idf/exports/geojson",
-)
+STATIONS_URL = config.STATIONS_URL
 STATIONS_RAW = DATA_RAW / "stations" / "emplacement_gares_idfm.geojson"
 DVF_STATIONS_OUT = DATA_PROCESSED / "dvf_appartements_stations.parquet"
 
-MODES_RETENUS = list(getattr(_cfg, "MODES_RETENUS", ["METRO", "RER"]))
-CRS_METRIQUE = getattr(_cfg, "CRS_METRIQUE", "EPSG:2154")
-CLASSES_DIST = list(getattr(_cfg, "CLASSES_DIST", [0, 100, 200, 300, 400, 500, np.inf]))
-RAYON_VOISINAGE = float(getattr(_cfg, "RAYON_VOISINAGE", 500.0))
+MODES_RETENUS = list(config.MODES_RETENUS)
+CRS_METRIQUE = config.CRS_METRIQUE
+CLASSES_DIST = list(config.CLASSES_DIST)
+RAYON_VOISINAGE = float(config.RAYON_VOISINAGE)
 
 COLS_IDFM = {
     "id_ref_zdc": "id_station",
@@ -177,7 +160,7 @@ def prepare_stations_lignes(
         .dt.tz_localize(None)
         .dt.normalize()
     )
-    gdf["id_station"] = gdf["id_station"].astype("Int64").astype("string")
+    gdf["id_station"] = gdf["id_station"].astype("string")
     gdf = gdf.dropna(subset=["id_station"]).drop_duplicates(subset=["id_station", "ligne"])
 
     if gdf.empty:

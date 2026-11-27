@@ -6,7 +6,7 @@ from pathlib import Path
 # Racine du dépôt : src/vrai_prix/config.py -> remonte de 3 niveaux
 ROOT = Path(__file__).resolve().parents[2]
 DATA_RAW = ROOT / "data" / "raw"
-DATA_PROCESSED = ROOT / "data" / "processed"
+DATA_PROCESSED = ROOT / "data" / "processed" / "dvf-stations"
 
 # --- Périmètre : Paris et petite couronne ---------------------------------
 DEPARTEMENTS = ["75", "92", "93", "94"]
@@ -35,3 +35,14 @@ LON_BOUNDS = (1.4, 3.6)
 
 # Fichier de sortie du pipeline DVF
 DVF_CLEAN_PARQUET = DATA_PROCESSED / "dvf_appartements.parquet"
+
+
+# --- Réseau de transport (Île-de-France Mobilités) ------------------------
+STATIONS_URL = (
+    "https://data.iledefrance-mobilites.fr/api/explore/v2.1/catalog/datasets/"
+    "emplacement-des-gares-idf/exports/geojson"
+)
+MODES_RETENUS = ["METRO", "RER"]
+CRS_METRIQUE = "EPSG:2154"
+CLASSES_DIST = [0, 100, 200, 300, 400, 500, float("inf")]
+RAYON_VOISINAGE = 500.0
