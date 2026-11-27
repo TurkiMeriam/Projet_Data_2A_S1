@@ -1,0 +1,9 @@
+zone,tranche,ecart_pct,ecart_median_cellules_pct,part_cellules_positives_%,n_cellules,n_ventes
+Paris,0-100,-0.88,-1.37,42.41,349.0,13907.0
+Paris,100-200,-0.25,-0.79,43.0,400.0,43071.0
+Paris,400-600,-1.8,-1.28,39.57,235.0,13517.0
+Paris,600-1000,-6.54,-3.6,33.33,39.0,581.0
+Petite couronne,0-100,-3.54,-2.38,29.41,34.0,431.0
+Petite couronne,100-200,-0.78,-0.01,49.83,293.0,5681.0
+Petite couronne,400-600,-0.92,-1.25,44.38,667.0,25997.0
+Petite couronne,600-1000,-3.03,-4.08,33.71,620.0,27193.0
