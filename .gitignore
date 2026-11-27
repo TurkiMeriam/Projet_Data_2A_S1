@@ -219,16 +219,8 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 # Données : jamais dans Git (DVF = centaines de Mo). Se régénèrent via le pipeline.
-data/raw/*
-data/processed/*
+# Ignorer uniquement les fichiers temporaires
 data/interim/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-*.parquet
-*.duckdb
-*.csv
-*.csv.gz
-*.gz
 *.zip
 *.gpkg
 *.shp
