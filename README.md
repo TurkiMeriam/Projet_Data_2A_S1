@@ -74,8 +74,8 @@ Les notebooks ne contiennent presque pas de code : les calculs sont dans `src/vr
 ```
 .
 ├── data/
-│   ├── raw/                 # données brutes téléchargées (ignorées par Git)
-│   └── processed/dvf-stations/ # données nettoyées (ignorées par Git)
+│   ├── raw/                 # données brutes téléchargées 
+│   └── processed/dvf-stations/ # données nettoyées 
 ├── docs/sources.md          # sources, URL, dates, licences
 ├── notebooks/
 │   ├── 01_exploration.ipynb     # analyse descriptive
